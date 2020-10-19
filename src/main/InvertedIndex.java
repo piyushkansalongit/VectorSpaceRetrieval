@@ -12,13 +12,14 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-import org.javatuples.Pair;
 import java.util.zip.GZIPOutputStream;
+
+import org.javatuples.Pair;
 
 public class InvertedIndex {
     private static ArrayList<HashMap<String, Term>> indexTerms = new ArrayList<>();
 
-    public static ArrayList<String> BuildVocabulary(ArrayList<HashMap<String, Byte>> tokens){
+    public static ArrayList<String> __buildVocabulary(ArrayList<HashMap<String, Byte>> tokens){
 
         ArrayList<Integer> indices = new ArrayList<>();
         for (int i = 0; i < tokens.size(); i++) {
@@ -117,7 +118,7 @@ public class InvertedIndex {
     }
 
 
-    public static void BuildDictAndIndex(HashMap<Integer, ArrayList<HashMap<String, Byte>>> documentObjects, int index, StopWords stopWords){
+    public static void BuildDictAndIndex(HashMap<Integer, ArrayList<HashMap<String, Byte>>> documentObjects, int index){
         ArrayList<HashMap<String, Byte>> tokens = new ArrayList<>();
         HashMap<String, Term> terms = new HashMap<>();
         // Find the vocabulary
@@ -125,20 +126,16 @@ public class InvertedIndex {
         for(Integer docID : documentObjects.keySet()) {
             tokens.add(documentObjects.get(docID).get(index));
         }
-        vocabulary = BuildVocabulary(tokens);
+        vocabulary = InvertedIndex.__buildVocabulary(tokens);
 
         for(String token : vocabulary){
-            if(!stopWords.isStopWord(token)){
-                terms.put(token, new Term());
-            }
+            terms.put(token, new Term());
         }
 
         for(int i=1; i<=documentObjects.keySet().size(); i++){
             HashMap<String, Byte> documentObject = documentObjects.get(i).get(index);
             for(String token: documentObject.keySet()){
-                if(!stopWords.isStopWord(token)){
-                    terms.get(token).update(i, documentObject.get(token));
-                }
+                terms.get(token).update(i, documentObject.get(token));
             }
         }
         
@@ -159,13 +156,12 @@ public class InvertedIndex {
         System.out.println(String.format("Number of Documents: %d", documentObjects.size()));
 
         //Build 4 different inverted indexes
-        StopWords stopWords = new StopWords();
         for(int i=0; i<4; i++){
             // Write a dictionary of the format:
             //      word:df:offset1
             // Write posting lists using the format:
             //      <id:tf><id:tf>...<id:tf>
-            BuildDictAndIndex(documentObjects, i, stopWords);
+            BuildDictAndIndex(documentObjects, i);
         }
 
         //INFO

@@ -8,9 +8,7 @@ import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 public class FileProcessor {
-
     public static HashMap<Integer, String> docIdx2ID = new HashMap<>();
     private static Integer documentCounter = 0;
     public static int getDocumentIdx(String docID){
@@ -90,7 +88,12 @@ public class FileProcessor {
         text = FindMatchingEntities(text, patternPersons, person_tokens);
 
         // Add remaining tokens to the standatd token list
-        ArrayList<String> standard_tokens = Util.TokenizeText(text);
+        //INFO
+        // System.out.println(text);
+        ArrayList<String> standard_tokens = Util.TokenizeText(text, true);
+        //INFO
+        // System.out.println(standard_tokens);
+
         tokens.add(Util.List2Set(standard_tokens));
         tokens.add(Util.List2Set(location_tokens));
         tokens.add(Util.List2Set(organization_tokens));

@@ -1,13 +1,6 @@
 package src.external;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Iterator;
-
 import java.util.function.Function;
-
-
 import edu.stanford.nlp.ling.Word;
 
 /**
@@ -552,31 +545,6 @@ public class Stemmer implements Function<Word,Word> {
     }
     i_end = k + 1;
     i = 0;
-  }
-
-  /**
-   * Test program for demonstrating the Stemmer.  It reads text from a
-   * a list of files, stems each word, and writes the result to standard
-   * output. Note that the word stemmed is expected to be in lower case:
-   * forcing lower case must be done outside the Stemmer class.
-   * Usage: Stemmer file-name file-name ...
-   */
-  public static void main(String[] args) throws IOException {
-    Stemmer s = new Stemmer();
-    if (args[0].equals("-file")) {
-      Iterator<Word> it = PTBTokenizer.newPTBTokenizer(new InputStreamReader(new FileInputStream(args[1]), "utf-8"));
-      while (it.hasNext()) {
-        Word token = it.next();
-        System.out.print(s.stem(token.word()));
-        System.out.print(' ');
-      }
-    } else {
-      for (String arg : args) {
-        System.out.print(s.stem(arg));
-        System.out.print(' ');
-      }
-    }
-    System.out.println();
   }
 
   /**

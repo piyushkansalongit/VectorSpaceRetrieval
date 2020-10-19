@@ -30,27 +30,28 @@ public class QueryProcessor {
         return (float)(Math.log(1 + (float)QueryProcessor.numDocuments/df)*(1+Math.log(tf)));
     }
     
-    private static HashMap<Integer, ArrayList<String>> __queryExpand1(ArrayList<String> query){
+    private static HashMap<Integer, ArrayList<String>> __queryExpand1(String query){
+        ArrayList<String> tokenizedQuery = Util.TokenizeText(query, false);
         HashMap<Integer, ArrayList<String>> expandedQuery = new HashMap<>();
         for(int i=0; i<4; i++){
             expandedQuery.put(i, new ArrayList<>());
         }
 
-        int n = query.size();
+        int n = tokenizedQuery.size();
         for(int index=1; index<4; index++){
-            ArrayList<String> temp = new ArrayList<>(query);
+            ArrayList<String> temp = new ArrayList<>(tokenizedQuery);
             for(int i=n; i>=1; i--){
                 ArrayList<String> ngram = Util.NGrams(temp, i);
                 for(String token : ngram){
                     if(QueryProcessor.indexes.get(index).containsKey(token)){
                         expandedQuery.get(index).add(token);
-                        temp = Util.RemoveToken(temp, token);
+                        temp = Util.RemoveToken(temp, token, false);
                     }
                 }
             }
         }
 
-        for(String token : query){
+        for(String token : Util.TokenizeText(query, true)){
             if(QueryProcessor.indexes.get(0).containsKey(token)){
                 expandedQuery.get(0).add(token);
             }
@@ -59,36 +60,36 @@ public class QueryProcessor {
         return expandedQuery;
     }
 
-    private static HashMap<Integer, ArrayList<String>> __queryExpand2(ArrayList<String> query){
-        HashMap<Integer, ArrayList<String>> expandedQuery = new HashMap<>();
-        for(int i=0; i<4; i++){
-            expandedQuery.put(i, new ArrayList<>());
-        }
+    // private static HashMap<Integer, ArrayList<String>> __queryExpand2(ArrayList<String> query){
+    //     HashMap<Integer, ArrayList<String>> expandedQuery = new HashMap<>();
+    //     for(int i=0; i<4; i++){
+    //         expandedQuery.put(i, new ArrayList<>());
+    //     }
 
-        int n = query.size();
-        for(int i=n; i>=1; i--){
-            for(int index=1; index<4; index++){
-                ArrayList<String> ngram = Util.NGrams(query, i);
-                for(String token : ngram){
-                    if(QueryProcessor.indexes.get(index).containsKey(token)){
-                        expandedQuery.get(index).add(token);
-                        query = Util.RemoveToken(query, token);
-                    }
-                }
-            }
-        }
-        for(int i=n; i>=1; i--){
-            ArrayList<String> ngram = Util.NGrams(query, i);
-            for(String token : ngram){
-                if(QueryProcessor.indexes.get(0).containsKey(token)){
-                    expandedQuery.get(0).add(token);
-                    query = Util.RemoveToken(query, token);
-                }
-            }
-        }
-        System.out.println(expandedQuery);
-        return expandedQuery;
-    }
+    //     int n = query.size();
+    //     for(int i=n; i>=1; i--){
+    //         for(int index=1; index<4; index++){
+    //             ArrayList<String> ngram = Util.NGrams(query, i);
+    //             for(String token : ngram){
+    //                 if(QueryProcessor.indexes.get(index).containsKey(token)){
+    //                     expandedQuery.get(index).add(token);
+    //                     query = Util.RemoveToken(query, token);
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     for(int i=n; i>=1; i--){
+    //         ArrayList<String> ngram = Util.NGrams(query, i);
+    //         for(String token : ngram){
+    //             if(QueryProcessor.indexes.get(0).containsKey(token)){
+    //                 expandedQuery.get(0).add(token);
+    //                 query = Util.RemoveToken(query, token);
+    //             }
+    //         }
+    //     }
+    //     System.out.println(expandedQuery);
+    //     return expandedQuery;
+    // }
 
     private static void __AddTopK(ArrayList<Float> scores, HashMap<String, Float> finalScores){
         // Get the indices
@@ -295,15 +296,14 @@ public class QueryProcessor {
         ArrayList<HashMap<Integer, ArrayList<String>>> queries = new ArrayList<>();
         while(m.find()){
             String query = m.group(2).strip().replaceAll("[\\s]+", " ").toLowerCase();
-            ArrayList<String> tokenizedQuery = Util.TokenizeText(query);
-            queries.add(QueryProcessor.__queryExpand1(tokenizedQuery));
+            queries.add(QueryProcessor.__queryExpand1(query));
 
             System.out.format("Query: %d -- %s\n", queries.size(), queries.get(queries.size()-1));
         }
 
         for(int i=0; i<queries.size(); i++){
             //INFO
-            System.out.println(String.format("Processing query: %d", i));
+            // System.out.println(String.format("Processing query: %d", i));
 
             // Each query can be of multiple forms
             // ----- Airbus Subsidies    := Regular Query

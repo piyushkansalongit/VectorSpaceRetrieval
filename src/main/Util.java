@@ -13,8 +13,12 @@ import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import src.external.Stemmer;
+
 public class Util {
-    private static Pattern patternSpecialWords = Pattern.compile("[a-zA-Z]+['][a-zA-Z]+");
+    private static Stemmer stemmer = new Stemmer();
+    private static StopWords stopWords = new StopWords();
+    // private static Pattern patternSpecialWords = Pattern.compile("[a-zA-Z]+['][a-zA-Z]+");
     private static Pattern patterAcronyms = Pattern.compile("\\b(?:[a-zA-Z]\\.){2,}");
     private static Pattern patternPunctuations = Pattern.compile("[,'-._:;#%=@?^`!~$&/\"|\\\\]");
 
@@ -39,7 +43,7 @@ public class Util {
         return text;
     }
     
-    public static ArrayList<String> TokenizeText(String text){
+    public static ArrayList<String> TokenizeText(String text, boolean stem){
         ArrayList<String> tokens = new ArrayList<>();
  
         // tokens with apostrophe
@@ -54,7 +58,13 @@ public class Util {
         for (String token : text.split("[\\s]+", 0)) {
             if(token.length() == 0)
                 continue;
-            tokens.add(token);
+            if(!Util.stopWords.isStopWord(token)){
+                if(stem){
+                    tokens.add(Util.stemmer.stem(token));
+                }else{
+                    tokens.add(token);
+                }
+            }
         }
         return tokens;
     }
@@ -94,8 +104,8 @@ public class Util {
         return sb.toString();
     }
 
-    public static ArrayList<String> RemoveToken(ArrayList<String> query, String token){
-        return  Util.TokenizeText(Util.__concat(query, 0, query.size()).replace(token, ""));
+    public static ArrayList<String> RemoveToken(ArrayList<String> query, String token, boolean stopnstem){
+        return  Util.TokenizeText(Util.__concat(query, 0, query.size()).replace(token, ""), stopnstem);
     }
 
     public static ArrayList<Integer> Sort(ArrayList<Float> scores){

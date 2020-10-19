@@ -522,7 +522,6 @@ public class StopWords {
         "regards",
         "related",
         "relatively",
-        "research",
         "respectively",
         "resulted",
         "resulting",
