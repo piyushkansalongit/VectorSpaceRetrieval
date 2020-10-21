@@ -2,8 +2,8 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser(description="Generating statistics on IR result file wrt to grount truth")
-    parser.add_argument('--results', type=str, default = './generated/resultFile', help='path to the results file')
-    parser.add_argument('--gt', type=str, default='./data/qrels.filtered.51-100', help='path to the ground truth file')
+    parser.add_argument('--results', type=str, help='path to the results file')
+    parser.add_argument('--gt', type=str, help='path to the ground truth file')
     args = parser.parse_args()
 
     results = {}

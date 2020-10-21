@@ -4,14 +4,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+
 import java.util.zip.GZIPOutputStream;
 
 import org.javatuples.Pair;
@@ -45,6 +44,7 @@ public class InvertedIndex {
         try{
             GZIPOutputStream postingListOutput = new GZIPOutputStream(new FileOutputStream(String.format("%s.idx", path)));
             GZIPOutputStream dictionaryOutput = new GZIPOutputStream(new FileOutputStream(String.format("%s.dict", path)));
+
             Integer START=0, SIZE=0, VOCAB=0;
             Integer[] breakPoints = new Integer[4];
             for(int index=0; index<4; index++){
@@ -72,6 +72,8 @@ public class InvertedIndex {
                     }
                     if(index == 0 && totalCount == 1)
                         continue;
+                    if(index != 0 && totalCount <= 10)
+                        continue;
                     postingListOutput.write(list_buffer.array());
     
                     // Write one dictionary entry to the file system
@@ -83,7 +85,8 @@ public class InvertedIndex {
                     dict_buffer.putInt(START);
                     dictionaryOutput.write(dict_buffer.array());
     
-                    START += SIZE;
+                    START += postingList.size();
+                    // System.out.format("%s:SIZE: %d, START:%d, BINARYSIZE:%d\n",s, SIZE, START, compressedPS.getCount());s
                     VOCAB += 1;
                 }
                 breakPoints[index] = VOCAB;
@@ -145,13 +148,12 @@ public class InvertedIndex {
     
     public static void main(String[] args) {
         File f = new File(args[0]);
-        Path currentPath = Paths.get(System.getProperty("user.dir"));
         String[] filenames = f.list();
         HashMap<Integer, ArrayList<HashMap<String, Byte>>> documentObjects = new HashMap<>();
 
         //INFO
         System.out.println("Starting to read documents...");
-        new FileProcessor(currentPath, f.getPath(), filenames, documentObjects).run();
+        new FileProcessor(args[0], filenames, documentObjects).run();
         //INFO
         System.out.println(String.format("Number of Documents: %d", documentObjects.size()));
 

@@ -1,14 +1,18 @@
 package src.main;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import src.external.Stemmer;
+
 public class FileProcessor {
+    private static Stemmer stemmer = new Stemmer();
+    private static StopWords stopWords = new StopWords();
+
     public static HashMap<Integer, String> docIdx2ID = new HashMap<>();
     private static Integer documentCounter = 0;
     public static int getDocumentIdx(String docID){
@@ -17,14 +21,12 @@ public class FileProcessor {
         return FileProcessor.documentCounter;
     }
 
-    private Path currentPath;
-    private String relativePath;
+    private String dirPath;
     private String[] filenames;
     private HashMap<Integer, ArrayList<HashMap<String, Byte>>> documentObjects;
 
-    public FileProcessor(Path currentPath, String relativePath, String[] filenames, HashMap<Integer, ArrayList<HashMap<String, Byte>>> documentObjects) {
-        this.currentPath = currentPath;
-        this.relativePath = relativePath;
+    public FileProcessor(String dirPath, String[] filenames, HashMap<Integer, ArrayList<HashMap<String, Byte>>> documentObjects) {
+        this.dirPath = dirPath;
         this.filenames = filenames;
         this.documentObjects = documentObjects;
     }
@@ -35,6 +37,26 @@ public class FileProcessor {
     private Pattern patternOrganizations = Pattern.compile("((<organization>)(.*?)(</organization>)\\s*)+");
     private Pattern patternPersons = Pattern.compile("((<person>)(.*?)(</person>)\\s*)+");
     private Pattern patternID = Pattern.compile("(<DOCNO>)(.*?)(</DOCNO>)", Pattern.DOTALL);
+
+    private static ArrayList<String> __tokenizeText(String text){
+        ArrayList<String> tokens = new ArrayList<>();
+    
+        // tokens that are acronyms
+        text = Util.FindAcronyms(tokens, text);
+
+        // Remove punctuations
+        text = Util.RemovePunctuationFromText(text);
+
+        for (String token : text.split("[\\s]+", 0)) {
+            if(token.length() == 0)
+                continue;
+            if(!FileProcessor.stopWords.isStopWord(token)){
+                String lemma = FileProcessor.stemmer.stem(token);
+                tokens.add(lemma);
+            }
+        }
+        return tokens;
+    }
 
     // Matches, extracts and removes NER Entities from a string
     private String FindMatchingEntities(String text, Pattern pattern, ArrayList<String> tokens){
@@ -58,7 +80,7 @@ public class FileProcessor {
             // Iterate through each <TEXT> section in the DOC
             documentTextBuilder.append(m.group(2));
         }
-        return Util.SpecialCleaner(documentTextBuilder.toString());
+        return documentTextBuilder.toString();
     }
 
     // Extracts the <DOCID> block from the <DOC> block
@@ -75,23 +97,24 @@ public class FileProcessor {
 
     // Tokenizes a document
     private void TokenizeDoc(String text, ArrayList<HashMap<String, Byte>> tokens){
-        // System.out.println(text);
+        
+        text = text.toLowerCase().replaceAll("([a-z]*)([\\d]+)([a-z]*)", "");
 
         // Extract locations, persons, and organisations as separate token lists
         ArrayList<String> location_tokens = new ArrayList<>();
         text = FindMatchingEntities(text, patternLocations, location_tokens);
+        // System.out.println(location_tokens);
 
         ArrayList<String> organization_tokens = new ArrayList<>();
         text = FindMatchingEntities(text, patternOrganizations, organization_tokens);
+        // System.out.println(organization_tokens);
 
         ArrayList<String> person_tokens = new ArrayList<>();
         text = FindMatchingEntities(text, patternPersons, person_tokens);
+        // System.out.println(person_tokens);
 
-        // Add remaining tokens to the standatd token list
-        //INFO
-        // System.out.println(text);
-        ArrayList<String> standard_tokens = Util.TokenizeText(text, true);
-        //INFO
+        // ArrayList<String> standard_tokens = FileProcessor.__tokenizeText(text);
+        ArrayList<String> standard_tokens = FileProcessor.__tokenizeText(text);
         // System.out.println(standard_tokens);
 
         tokens.add(Util.List2Set(standard_tokens));
@@ -104,7 +127,7 @@ public class FileProcessor {
         try{
             for (String filename : this.filenames) {
                 // Iterate through the files in the directory
-                String filePath = Paths.get(this.currentPath.toString(), this.relativePath, filename).toString();
+                String filePath = Paths.get(this.dirPath, filename).toString();
                 Matcher matcherDoc = patternDoc.matcher(Util.File2Seq(filePath));
                 while(matcherDoc.find()){
                     // Iterate through each <DOC> section in the file

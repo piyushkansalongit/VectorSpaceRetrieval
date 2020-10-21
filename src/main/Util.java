@@ -7,20 +7,53 @@ import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import src.external.Stemmer;
-
 public class Util {
-    private static Stemmer stemmer = new Stemmer();
-    private static StopWords stopWords = new StopWords();
-    // private static Pattern patternSpecialWords = Pattern.compile("[a-zA-Z]+['][a-zA-Z]+");
-    private static Pattern patterAcronyms = Pattern.compile("\\b(?:[a-zA-Z]\\.){2,}");
-    private static Pattern patternPunctuations = Pattern.compile("[,'-._:;#%=@?^`!~$&/\"|\\\\]");
+    private static Pattern patternAcronyms = Pattern.compile("\\b(?:[a-zA-Z]\\.){2,}");
+    private static Pattern patternPunctuationText = Pattern.compile("[,'._:;#%*=@?^`!~$&/\"|\\\\\\(\\)\\{\\}-]");
+    private static Pattern patternPunctuationQuery = Pattern.compile("[,._:;#%=@?^`!~$&/\"|\\\\\\(\\)\\{\\}-]");
+    public static String __concat(ArrayList<String> words, int start, int end) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = start; i < end; i++)
+            sb.append((i > start ? " " : "") + words.get(i));
+        return sb.toString();
+    }
+
+    // Matches, extracts and removes matching patterns from a string
+    public static String FindAcronyms(ArrayList<String> tokens, String text){
+        Matcher m = Util.patternAcronyms.matcher(text);
+        while(m.find()){
+            String token = m.group();
+            tokens.add(token);
+        }
+        text = m.replaceAll("");
+        return text;
+    }
+
+    public static String FindMatchingEntities(ArrayList<String> tokens, String text, Pattern pattern){
+        Matcher m = pattern.matcher(text);
+        while(m.find()){
+            String token = m.group();
+            tokens.add(token.replaceAll("[l|o|p|n]:", "").strip());
+        }
+        text = m.replaceAll("");
+        return text;
+    }
+
+    public static String RemovePunctuationFromText(String text){
+        return Util.patternPunctuationText.matcher(text).replaceAll(" ");
+    }
+
+    public static String RemovePunctuationFromQuery(String text){
+        return Util.patternPunctuationQuery.matcher(text).replaceAll(" ");
+    }
+
 
     // Converts the contents of a file into a CharSequence
     public static CharSequence File2Seq(String filename) throws IOException {
@@ -30,49 +63,6 @@ public class Util {
         CharBuffer cbuf = Charset.forName("8859_1").newDecoder().decode(bbuf);
         input.close();
         return cbuf;
-    }
-
-    // Matches, extracts and removes matching patterns from a string
-    private static String FindMatchingTokens(ArrayList<String> tokens, String text, Pattern pattern){
-        Matcher m = pattern.matcher(text);
-        while(m.find()){
-            String token = m.group();
-            tokens.add(token);
-        }
-        text = m.replaceAll("");
-        return text;
-    }
-    
-    public static ArrayList<String> TokenizeText(String text, boolean stem){
-        ArrayList<String> tokens = new ArrayList<>();
- 
-        // tokens with apostrophe
-        // text = Util.FindMatchingTokens(tokens, text, patternSpecialWords);
-    
-        // tokens that are acronyms
-        text = Util.FindMatchingTokens(tokens, text, patterAcronyms);
-
-        // Remove punctuations
-        text = patternPunctuations.matcher(text).replaceAll(" ");
-        
-        for (String token : text.split("[\\s]+", 0)) {
-            if(token.length() == 0)
-                continue;
-            if(!Util.stopWords.isStopWord(token)){
-                if(stem){
-                    tokens.add(Util.stemmer.stem(token));
-                }else{
-                    tokens.add(token);
-                }
-            }
-        }
-        return tokens;
-    }
-
-    // Clean the text
-    public static String SpecialCleaner(String text){
-        return text.toLowerCase().replaceAll("([a-z]*)([\\d]+)([a-z]*)", "");
-        // return text;
     }
 
     // Converts the list of tokens into a set of unique tokens with counts
@@ -97,18 +87,12 @@ public class Util {
         return ngrams;
     }
 
-    public static String __concat(ArrayList<String> words, int start, int end) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = start; i < end; i++)
-            sb.append((i > start ? " " : "") + words.get(i));
-        return sb.toString();
+    public static ArrayList<String> DeleteNGram(String token, ArrayList<String> tokens){
+        String remaining = Util.__concat(tokens, 0, tokens.size()).replace(token, "");
+        return new ArrayList<String>(Arrays.asList(remaining.split("[\\s]+", 0)));
     }
 
-    public static ArrayList<String> RemoveToken(ArrayList<String> query, String token, boolean stopnstem){
-        return  Util.TokenizeText(Util.__concat(query, 0, query.size()).replace(token, ""), stopnstem);
-    }
-
-    public static ArrayList<Integer> Sort(ArrayList<Float> scores){
+    public static ArrayList<Integer> Sort(final ArrayList<Float> scores){
         ArrayList<Integer> indices = new ArrayList<>();
         for (int i = 0; i < scores.size(); i++) {
             indices.add(i);
@@ -121,5 +105,21 @@ public class Util {
         };
         Collections.sort(indices, comparator);
         return indices;
+    }
+
+    public static boolean IsWildCard(String s){
+        return s.charAt(s.length()-1)=='*';
+    }
+
+    public static ArrayList<String> FindWildCardTokens(String s, ArrayList<String> vocabulary){
+        ArrayList<String> matches = new ArrayList<>();
+        for(String token : vocabulary){
+            if(token.length()>=s.length()-1){
+                if(token.substring(0, s.length()-1).equals(s.substring(0, s.length()-1))){
+                    matches.add(token);
+                }
+            }
+        }
+        return matches;
     }
 }

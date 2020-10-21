@@ -1,6 +1,20 @@
+# Compile
 javac -classpath .:./lib/* -d classes src/*/*.java
-# /usr/bin/time -v java -Xmx4096m -classpath .:classes:./lib/* src/main/InvertedIndex.java data/TaggedTrainingAP generated/indexfile
-# /usr/bin/time -v python3 view_dict_and_index.py --vocabulary=True --index=False
-java -Xmx4096m -classpath .:classes:./lib/* src/main/QueryProcessor.java --query data/topics.51-100 --cutoff 100 --output generated/resultFile --index generated/indexfile.idx --dict generated/indexfile.dict
-./trec_eval-master/trec_eval -mndcg_cut.10 -M100 -mset_F data/qrels.filtered.51-100 generated/resultFile
-python3 generate_stats.py
+
+# Run the indexer
+/usr/bin/time -v java -Xmx4096m -classpath .:classes:./lib/* src/main/InvertedIndex.java /home/ankur/Desktop/COL764/data/TaggedTrainingAP /home/ankur/Desktop/COL764/generated/indexfile
+
+# Run the dictionary printer
+java -classpath .:classes:./lib/* src/main/printdict.java /home/ankur/Desktop/COL764/generated/indexfile.dict > /home/ankur/Desktop/COL764/generated/dictionary
+
+# Process the queries
+java -Xmx4096m -classpath .:classes:./lib/* src/main/QueryProcessor.java \
+--query /home/ankur/Desktop/COL764/data/topics.51-100.wildcard-tagged \
+--cutoff 100 \
+--output /home/ankur/Desktop/COL764/generated/resultfile \
+--index /home/ankur/Desktop/COL764/generated/indexfile.idx \
+--dict /home/ankur/Desktop/COL764/generated/indexfile.dict
+
+# Get the results
+./trec_eval-master/trec_eval -mndcg_cut.10 -M100 -mset_F /home/ankur/Desktop/COL764/data/qrels.filtered.51-100 /home/ankur/Desktop/COL764/generated/resultfile
+python3 generate_stats.py --gt=/home/ankur/Desktop/COL764/data/qrels.filtered.51-100 --results=/home/ankur/Desktop/COL764/generated/resultfile
